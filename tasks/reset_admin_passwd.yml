@@ -1,0 +1,11 @@
+---
+- name: Change the default password
+  template:
+    src: bootstrap.creds.j2
+    dest: "{{ artifactory_home }}/../access/bootstrap.creds"
+    mode: "0600"
+    owner: root
+    group: root
+  notify:
+    - restart artifactory
+

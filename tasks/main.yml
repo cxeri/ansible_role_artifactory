@@ -6,32 +6,25 @@
   run_once: yes
   delegate_to: localhost
 
+- name: collect facts about system services
+  service_facts:
+  register: services_state
+
+- name: Debug
+  debug:
+    var: services_state
+  
 - name: install yum repository
-  ansible.builtin.get_url:
-    url: "https://bintray.com/jfrog/artifactory-rpms/rpm"
-    dest: /etc/yum.repos.d/bintray-jfrog-artifactory-rpms.repo
-  when:
-    - ansible_pkg_mgr in [ "dnf", "yum" ]
+  unarchive:
+    url: "https://releases.jfrog.io/artifactory/jfrog-prox/org/artifactory/pro/rpm/jfrog-platform-trial-prox/[RELEASE]/jfrog-platform-trial-prox-[RELEASE]-rpm.tar.gz"
+    dest: $src_dir/jfrog
+  when: "ansible_facts.services['{{ service }}'] is defined"
 
-- name: configure apt repository
-  block:
-    - name: trust gpg key
-      ansible.builtin.apt_key:
-        url: "https://api.bintray.com/orgs/jfrog/keys/gpg/public.key"
-        state: present
-        validate_certs: no
-
-    - name: install deb repository
-      ansible.builtin.apt_repository:
-        repo: "deb https://jfrog.bintray.com/artifactory-debs {{ ansible_distribution_release | lower }} main"
-        state: present
-  when:
-    - ansible_pkg_mgr in [ "apt" ]
-
-- name: install package
-  ansible.builtin.package:
-    name: jfrog-artifactory-{{ artifactory_flavour }}
-    state: present
+- name: Install Artifactory
+  command: ./install.sh
+  environment:
+    chdir: "{{ source_directory }}/jfrog-platform-trial-pro*"
+  when: "ansible_facts.services['artifactory'] is defined"
 
 - name: ensure artifactory_file_store_dir exists
   ansible.builtin.file:
@@ -64,3 +57,9 @@
     name: artifactory
     state: started
     enabled: yes
+
+- name: Change the default password
+  include_tasks: update_admin_passwd.yml
+
+- name: Upload the latest License 
+  include_tasks: update_license.yml

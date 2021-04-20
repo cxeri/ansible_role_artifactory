@@ -1,0 +1,24 @@
+---
+# Execute two POSt requests to the license api endpoint using the xray and artifactory licenses
+# curl -u "admin:$pass" -X POST "http://192.168.101.47/artifactory/api/system/licenses" --header "Content-Type:application/json"  --data '{ "licenseKey": "hdhfdgfhef..." }'
+- name :Define variables
+  set_facts:
+    admin_user: "{{ item.name }}
+    admin_passwd: "{{ item.password }}"
+  with_items:
+    - "{{ artifactory_admin_users }}"
+  when: item.name == 'admin'
+
+- name: Implement the Artifactory license
+  uri:
+    url: "http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}/artifactory/api/system/licenses"
+    user: "{{ admin_user }}"
+    password: "{{ admin_passwd }}"
+    method: "POST"
+    body: "{ 'licenseKey': '{{ item }}' }"
+  with_items:
+    - "{{ artifactory_license }}"
+    - "{{ xray_license | default(omit) }}"
+  notify:
+    - restart artifactory
+

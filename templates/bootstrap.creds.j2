@@ -1,0 +1,6 @@
+{% for admin in artifactory_admin_users %}
+{% if admin.nodes is defined %}{% for node in admin.nodes %}
+{{ admin.name }}@{{ node }}={{ admin.password }}
+{% endif %}
+{{ admin.name }}@*={{ admin.password }}
+{% endfor %}
